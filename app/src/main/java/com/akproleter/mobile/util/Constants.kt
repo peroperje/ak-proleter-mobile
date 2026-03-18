@@ -1,6 +1,12 @@
 package com.akproleter.mobile.util
 
+import com.akproleter.mobile.BuildConfig
+
 object Constants {
-    const val BASE_URL = "http://10.0.2.2:3000" // For emulator
-    const val VOICE_PROCESS_ENDPOINT = "/api/voice/process"
+    val BASE_URL = if (BuildConfig.DEBUG) {
+        "http://localhost:3000/"
+    } else {
+        "https://ak-proleter.vercel.app/"
+    }
+    const val VOICE_PROCESS_ENDPOINT = "api/voice/process"
 }
