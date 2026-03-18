@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">AK Proleter</string>
+    <string name="login">Prijava</string>
+    <string name="email">Email</string>
+    <string name="password">Lozinka</string>
+    <string name="login_success">Uspešna prijava</string>
+    <string name="login_error">Pogrešni podaci</string>
+    <string name="record_result">Snimi rezultat</string>
+    <string name="voice_hint">Pritisni i drži da snimiš</string>
+    <string name="language_switched">Jezik promenjen na srpski</string>
+</resources>
