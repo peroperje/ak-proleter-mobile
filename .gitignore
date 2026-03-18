@@ -1,0 +1,51 @@
+# Gradle files
+.gradle/
+build/
+
+# Android Studio / IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+.idea/libraries/
+.idea/modules.xml
+.idea/workspace.xml
+.idea/tasks.xml
+.idea/assetWizardSettings.xml
+.idea/dictionaries
+.idea/shelf
+.idea/caches
+
+# VS Code
+.vscode/
+
+# Local configuration files (SDK path, etc.)
+local.properties
+
+# Log files
+*.log
+
+# Android-specific ignores
+captures/
+.externalNativeBuild/
+.cxx/
+*.apk
+*.aar
+*.ap_
+*.dex
+
+# Key Store files (NEVER PUSH THESE)
+*.keystore
+*.jks
+*.p12
+*.pem
+
+# Google Services (if applicable, often ignored to avoid leaking keys)
+# google-services.json
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Backup files
+*.bak
+*~
