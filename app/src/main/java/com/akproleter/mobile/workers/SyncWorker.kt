@@ -8,6 +8,7 @@ import androidx.work.WorkerParameters
 import com.akproleter.mobile.data.local.AkProleterDao
 import com.akproleter.mobile.data.remote.ApiService
 import com.akproleter.mobile.data.remote.PendingResultRequest
+import com.akproleter.mobile.data.repositories.MetadataRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 
@@ -16,11 +17,17 @@ class SyncWorker @AssistedInject constructor(
     @Assisted context: Context,
     @Assisted workerParams: WorkerParameters,
     private val dao: AkProleterDao,
-    private val apiService: ApiService
+    private val apiService: ApiService,
+    private val metadataRepository: MetadataRepository
 ) : CoroutineWorker(context, workerParams) {
 
     override suspend fun doWork(): Result {
-        Log.d(TAG, "SyncWorker started — querying unsynced results")
+        Log.d(TAG, "SyncWorker started — syncing metadata first")
+        // We sync metadata first so that result submission might use up-to-date IDs
+        // and voice processing has latest context hints.
+        metadataRepository.syncMetadata()
+
+        Log.d(TAG, "Querying unsynced results")
         val unsyncedResults = dao.getUnsyncedResults()
 
         if (unsyncedResults.isEmpty()) {

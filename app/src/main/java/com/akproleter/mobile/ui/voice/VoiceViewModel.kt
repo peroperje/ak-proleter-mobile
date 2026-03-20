@@ -8,6 +8,7 @@ import com.akproleter.mobile.data.repositories.VoiceRepository
 import com.akproleter.mobile.voice.TextToSpeechManager
 import com.akproleter.mobile.voice.VoiceManager
 import com.akproleter.mobile.voice.VoiceState
+import com.akproleter.mobile.data.repositories.MetadataRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,7 +20,8 @@ import javax.inject.Inject
 class VoiceViewModel @Inject constructor(
     private val voiceManager: VoiceManager,
     private val voiceRepository: VoiceRepository,
-    private val ttsManager: TextToSpeechManager
+    private val ttsManager: TextToSpeechManager,
+    private val metadataRepository: MetadataRepository
 ) : ViewModel() {
 
     val voiceState: StateFlow<VoiceState> = voiceManager.voiceState
@@ -29,6 +31,12 @@ class VoiceViewModel @Inject constructor(
     val selectedLanguage: StateFlow<String> = _selectedLanguage.asStateFlow()
 
     init {
+        viewModelScope.launch {
+            if (metadataRepository.isMetadataEmpty()) {
+                Log.d(TAG, "Metadata is empty, triggering background sync...")
+                metadataRepository.syncMetadata()
+            }
+        }
         viewModelScope.launch {
             voiceState.collect { state ->
                 if (state is VoiceState.Success) {
