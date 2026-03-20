@@ -7,10 +7,6 @@ import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.POST
 
-import retrofit2.http.GET
-import com.akproleter.mobile.data.remote.models.AthleteDto
-import com.akproleter.mobile.data.remote.models.DisciplineDto
-import com.akproleter.mobile.data.remote.models.EventDto
 
 interface ApiService {
     @POST(Constants.LOGIN_ENDPOINT)
@@ -26,21 +22,16 @@ interface ApiService {
         @Body result: PendingResultRequest
     ): Response<Unit>
 
-    @GET(Constants.ATHLETES_ENDPOINT)
-    suspend fun getAthletes(): Response<List<AthleteDto>>
-
-    @GET(Constants.DISCIPLINES_ENDPOINT)
-    suspend fun getDisciplines(): Response<List<DisciplineDto>>
-
-    @GET(Constants.EVENTS_ENDPOINT)
-    suspend fun getEvents(): Response<List<EventDto>>
 }
 
 data class VoiceRequest(
     val text: String,
     val language: String,
     val role: String,
-    val contextHints: Map<String, Any?>?
+    val timestamp: Long,
+    val lat: Float?,
+    val lon: Float?,
+    val location: String?
 )
 
 data class VoiceResponse(
@@ -55,5 +46,8 @@ data class PendingResultRequest(
     val disciplineId: String,
     val score: String?,
     val notes: String?,
-    val timestamp: Long
+    val timestamp: Long,
+    val lat: Float?,
+    val lon: Float?,
+    val location: String?
 )

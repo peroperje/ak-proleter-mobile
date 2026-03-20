@@ -36,9 +36,10 @@ fun VoiceScreen(
     val selectedLanguage by viewModel.selectedLanguage.collectAsStateWithLifecycle()
 
     val permissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { isGranted ->
-        if (isGranted) {
+        ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val audioGranted = permissions[Manifest.permission.RECORD_AUDIO] == true
+        if (audioGranted) {
             viewModel.startListening(context)
         } else {
             android.widget.Toast.makeText(
@@ -111,14 +112,23 @@ fun VoiceScreen(
             PushToTalkButton(
                 voiceState = voiceState,
                 onStart = {
-                    val permissionCheck = ContextCompat.checkSelfPermission(
+                    val audioCheck = ContextCompat.checkSelfPermission(
                         context,
                         Manifest.permission.RECORD_AUDIO
                     )
-                    if (permissionCheck == PackageManager.PERMISSION_GRANTED) {
+                    val locationCheck = ContextCompat.checkSelfPermission(
+                        context,
+                        Manifest.permission.ACCESS_COARSE_LOCATION
+                    )
+                    if (audioCheck == PackageManager.PERMISSION_GRANTED && locationCheck == PackageManager.PERMISSION_GRANTED) {
                         viewModel.startListening(context)
                     } else {
-                        permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                        permissionLauncher.launch(
+                            arrayOf(
+                                Manifest.permission.RECORD_AUDIO,
+                                Manifest.permission.ACCESS_COARSE_LOCATION
+                            )
+                        )
                     }
                 },
                 onStop = { viewModel.stopListening() }

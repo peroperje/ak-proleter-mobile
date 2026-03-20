@@ -88,6 +88,9 @@ dependencies {
     implementation(libs.androidx.hilt.work)
     ksp(libs.hilt.work.compiler)
 
+    // Location
+    implementation(libs.play.services.location)
+
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

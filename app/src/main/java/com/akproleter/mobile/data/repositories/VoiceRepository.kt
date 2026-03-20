@@ -21,11 +21,14 @@ class VoiceRepository @Inject constructor(
         text: String,
         language: String,
         role: String,
-        contextHints: Map<String, Any?>?
+        timestamp: Long,
+        lat: Float?,
+        lon: Float?,
+        location: String?
     ): Result<String> {
         return try {
             val response = apiService.processVoice(
-                VoiceRequest(text, language, role, contextHints)
+                VoiceRequest(text, language, role, timestamp, lat, lon, location)
             )
             if (response.isSuccessful) {
                 val message = response.body()?.message ?: "OK"
@@ -45,31 +48,15 @@ class VoiceRepository @Inject constructor(
                 eventId = "",
                 disciplineId = "",
                 score = null,
-                notes = text
+                notes = text,
+                lat = lat,
+                lon = lon,
+                location = location
             )
             Result.failure(e)
         }
     }
 
-    /**
-     * Gathers context information from the local database to assist the AI backend.
-     */
-    suspend fun getContextHints(): Map<String, Any?> {
-        return try {
-            val athletes = dao.getAthletesOnce().map { it.name }
-            val disciplines = dao.getDisciplinesOnce().map { it.name }
-            val events = dao.getEventsOnce().map { it.title }
-
-            mapOf(
-                "athletes" to athletes,
-                "disciplines" to disciplines,
-                "events" to events
-            )
-        } catch (e: Exception) {
-            Log.w(TAG, "Failed to gather context hints", e)
-            emptyMap()
-        }
-    }
 
     /**
      * Saves a record that failed to sync to the local Room database.
@@ -80,7 +67,10 @@ class VoiceRepository @Inject constructor(
         eventId: String,
         disciplineId: String,
         score: String?,
-        notes: String?
+        notes: String?,
+        lat: Float? = null,
+        lon: Float? = null,
+        location: String? = null
     ) {
         val entity = PendingResultEntity(
             athleteId = athleteId,
@@ -88,6 +78,9 @@ class VoiceRepository @Inject constructor(
             disciplineId = disciplineId,
             score = score,
             notes = notes,
+            lat = lat,
+            lon = lon,
+            location = location,
             isSynced = false
         )
         dao.insertPendingResult(entity)

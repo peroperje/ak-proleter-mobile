@@ -8,7 +8,7 @@ import com.akproleter.mobile.data.repositories.VoiceRepository
 import com.akproleter.mobile.voice.TextToSpeechManager
 import com.akproleter.mobile.voice.VoiceManager
 import com.akproleter.mobile.voice.VoiceState
-import com.akproleter.mobile.data.repositories.MetadataRepository
+import com.akproleter.mobile.location.AppLocationManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,7 +21,7 @@ class VoiceViewModel @Inject constructor(
     private val voiceManager: VoiceManager,
     private val voiceRepository: VoiceRepository,
     private val ttsManager: TextToSpeechManager,
-    private val metadataRepository: MetadataRepository
+    private val locationHelper: AppLocationManager
 ) : ViewModel() {
 
     val voiceState: StateFlow<VoiceState> = voiceManager.voiceState
@@ -31,12 +31,6 @@ class VoiceViewModel @Inject constructor(
     val selectedLanguage: StateFlow<String> = _selectedLanguage.asStateFlow()
 
     init {
-        viewModelScope.launch {
-            if (metadataRepository.isMetadataEmpty()) {
-                Log.d(TAG, "Metadata is empty, triggering background sync...")
-                metadataRepository.syncMetadata()
-            }
-        }
         viewModelScope.launch {
             voiceState.collect { state ->
                 if (state is VoiceState.Success) {
@@ -72,12 +66,16 @@ class VoiceViewModel @Inject constructor(
 
     private fun processVoiceText(text: String) {
         viewModelScope.launch {
-            val hints = voiceRepository.getContextHints()
+            val locationResult = locationHelper.getCurrentLocation()
+
             val result = voiceRepository.processVoiceCommand(
                 text = text,
                 language = _selectedLanguage.value,
                 role = "ADMIN", // TODO: derive from SessionManager / AuthState
-                contextHints = hints
+                timestamp = System.currentTimeMillis(),
+                lat = locationResult?.lat,
+                lon = locationResult?.lon,
+                location = locationResult?.locationText
             )
             result.onFailure { e ->
                 Log.w(TAG, "processVoiceCommand failed: ${e.message}")
