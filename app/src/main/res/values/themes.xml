@@ -1,5 +1,7 @@
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
     <style name="Theme.AKProleterMobile" parent="Theme.Material3.DayNight.NoActionBar">
-        <item name="android:statusBarColor">?attr/colorPrimaryVariant</item>
+        <!-- Using primary color for status bar as a safe fallback for XML theme -->
+        <item name="android:statusBarColor">?attr/colorPrimary</item>
     </style>
 </resources>
+

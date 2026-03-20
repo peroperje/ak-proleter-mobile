@@ -18,32 +18,39 @@ class VoiceViewModel @Inject constructor(
 
     val voiceState: StateFlow<VoiceState> = voiceManager.voiceState
 
-    fun toggleListening() {
-        if (voiceState.value is VoiceState.Listening) {
-            voiceManager.stopListening()
-        } else {
-            voiceManager.startListening()
+    init {
+        viewModelScope.launch {
+            voiceState.collect { state ->
+                if (state is VoiceState.Success) {
+                    processVoiceText(state.text)
+                }
+            }
         }
     }
 
-    fun startListening() {
-        voiceManager.startListening()
+    fun toggleListening(context: android.content.Context) {
+        if (voiceState.value is VoiceState.Listening) {
+            voiceManager.stopListening()
+        } else {
+            voiceManager.startListening(context)
+        }
+    }
+
+    fun startListening(context: android.content.Context, language: String = "en-US") {
+        voiceManager.startListening(context, language)
     }
 
     fun stopListening() {
         voiceManager.stopListening()
-        // If we have a final result, send it to the repository
-        val currentState = voiceState.value
-        if (currentState is VoiceState.Success) {
-            processVoiceText(currentState.text)
-        }
+        // The Success state will be caught asynchronously by the flow collector in init block
     }
 
     private fun processVoiceText(text: String) {
         viewModelScope.launch {
             voiceRepository.processVoiceCommand(
                 text = text,
-                language = "sr-RS", // Default, should be managed by LanguageManager
+                //language = "sr-RS", // Default, should be managed by LanguageManager
+                language = "en-US", // Default, should be managed by LanguageManager
                 role = "ADMIN", // Placeholder, from SessionManager
                 contextHints = emptyMap() // To be populated with current event, etc.
             )

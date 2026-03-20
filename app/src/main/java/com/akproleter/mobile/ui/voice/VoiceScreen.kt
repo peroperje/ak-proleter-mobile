@@ -1,15 +1,21 @@
 package com.akproleter.mobile.ui.voice
 
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.akproleter.mobile.R
 import com.akproleter.mobile.ui.voice.components.PushToTalkButton
@@ -20,7 +26,22 @@ fun VoiceScreen(
     viewModel: VoiceViewModel,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     val voiceState by viewModel.voiceState.collectAsStateWithLifecycle()
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            viewModel.startListening(context, "en-US")
+        } else {
+            android.widget.Toast.makeText(
+                context,
+                "Microphone permission is required to use voice assistant",
+                android.widget.Toast.LENGTH_SHORT
+            ).show()
+        }
+    }
 
     Column(
         modifier = modifier
@@ -50,7 +71,17 @@ fun VoiceScreen(
 
         PushToTalkButton(
             voiceState = voiceState,
-            onStart = { viewModel.startListening() },
+            onStart = {
+                val permissionCheck = ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.RECORD_AUDIO
+                )
+                if (permissionCheck == PackageManager.PERMISSION_GRANTED) {
+                    viewModel.startListening(context, "en-US")
+                } else {
+                    permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                }
+            },
             onStop = { viewModel.stopListening() }
         )
 
