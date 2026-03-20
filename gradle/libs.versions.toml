@@ -20,6 +20,8 @@ hilt = "2.54"
 
 hiltNavigationCompose = "1.2.0"
 encryptedSharedPreferences = "1.1.0-alpha06"
+workManager = "2.9.1"
+hiltWork = "1.2.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -51,6 +53,9 @@ androidx-security-crypto = { group = "androidx.security", name = "security-crypt
 material = { group = "com.google.android.material", name = "material", version = "1.12.0" }
 androidx-compose-material-icons-core = { group = "androidx.compose.material", name = "material-icons-core" }
 androidx-compose-material-icons-extended = { group = "androidx.compose.material", name = "material-icons-extended" }
+androidx-work-runtime = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "workManager" }
+androidx-hilt-work = { group = "androidx.hilt", name = "hilt-work", version.ref = "hiltWork" }
+hilt-work-compiler = { group = "androidx.hilt", name = "hilt-compiler", version.ref = "hiltWork" }
 
 
 [plugins]

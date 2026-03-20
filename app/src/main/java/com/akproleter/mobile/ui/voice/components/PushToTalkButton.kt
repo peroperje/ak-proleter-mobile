@@ -29,7 +29,14 @@ fun PushToTalkButton(
     modifier: Modifier = Modifier
 ) {
     val view = LocalView.current
-    val isListening = voiceState is VoiceState.Listening || voiceState is VoiceState.Partial || voiceState is VoiceState.Success
+    val isListening = voiceState is VoiceState.Listening || voiceState is VoiceState.Partial
+
+    // Trigger a success haptic whenever recognition completes successfully (Phase 3)
+    LaunchedEffect(voiceState) {
+        if (voiceState is VoiceState.Success) {
+            view.performHapticFeedback(HapticFeedbackConstants.CONFIRM)
+        }
+    }
 
     val scale by animateFloatAsState(
         targetValue = if (isListening) 1.25f else 1f,
@@ -38,12 +45,16 @@ fun PushToTalkButton(
     )
 
     val color by animateColorAsState(
-        targetValue = if (isListening) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+        targetValue = when (voiceState) {
+            is VoiceState.Listening, is VoiceState.Partial -> MaterialTheme.colorScheme.error
+            is VoiceState.Success -> MaterialTheme.colorScheme.secondary
+            else -> MaterialTheme.colorScheme.primary
+        },
         animationSpec = tween(300),
         label = "color"
     )
 
-    // Pulsing circle behind the mic
+    // Pulsing ring visible only while actively listening
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
     val pulseAlpha by infiniteTransition.animateFloat(
         initialValue = 0.3f,
@@ -65,10 +76,10 @@ fun PushToTalkButton(
     )
 
     Box(
-        modifier = modifier
-            .size(150.dp),
+        modifier = modifier.size(150.dp),
         contentAlignment = Alignment.Center
     ) {
+        // Animated pulsing ring visible while listening
         if (isListening) {
             Box(
                 modifier = Modifier
@@ -79,6 +90,7 @@ fun PushToTalkButton(
             )
         }
 
+        // Main mic button — press-and-hold to record
         Box(
             modifier = Modifier
                 .size(100.dp)
@@ -88,9 +100,11 @@ fun PushToTalkButton(
                 .pointerInput(Unit) {
                     detectTapGestures(
                         onPress = {
+                            // Haptic on press (interaction feedback)
                             view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
                             onStart()
                             tryAwaitRelease()
+                            // Haptic on release (ended recording)
                             view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
                             onStop()
                         }

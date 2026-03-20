@@ -17,5 +17,6 @@ object Constants {
     // Endpoints
     const val LOGIN_ENDPOINT = "api/auth/login" // Verify this route exists in Next.js
     const val VOICE_PROCESS_ENDPOINT = "api/voice/process"
+    const val SUBMIT_RESULT_ENDPOINT = "api/results/submit"
 }
 

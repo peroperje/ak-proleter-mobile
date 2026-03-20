@@ -28,12 +28,13 @@ fun VoiceScreen(
 ) {
     val context = LocalContext.current
     val voiceState by viewModel.voiceState.collectAsStateWithLifecycle()
+    val selectedLanguage by viewModel.selectedLanguage.collectAsStateWithLifecycle()
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { isGranted ->
         if (isGranted) {
-            viewModel.startListening(context, "en-US")
+            viewModel.startListening(context)
         } else {
             android.widget.Toast.makeText(
                 context,
@@ -62,7 +63,14 @@ fun VoiceScreen(
             text = "Voice Assistant",
             style = MaterialTheme.typography.headlineMedium,
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
-            modifier = Modifier.padding(bottom = 48.dp)
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+
+        // Language toggle chip: EN / SR
+        LanguageToggleChip(
+            selectedLanguage = selectedLanguage,
+            onToggle = { viewModel.toggleLanguage() },
+            modifier = Modifier.padding(bottom = 32.dp)
         )
 
         FeedbackDisplay(voiceState)
@@ -77,7 +85,7 @@ fun VoiceScreen(
                     Manifest.permission.RECORD_AUDIO
                 )
                 if (permissionCheck == PackageManager.PERMISSION_GRANTED) {
-                    viewModel.startListening(context, "en-US")
+                    viewModel.startListening(context)
                 } else {
                     permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
                 }
@@ -91,6 +99,30 @@ fun VoiceScreen(
             text = stringResource(id = R.string.voice_hint),
             style = MaterialTheme.typography.bodyLarge,
             color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
+        )
+    }
+}
+
+@Composable
+private fun LanguageToggleChip(
+    selectedLanguage: String,
+    onToggle: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val isEnglish = selectedLanguage.startsWith("en")
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        FilterChip(
+            selected = isEnglish,
+            onClick = { if (!isEnglish) onToggle() },
+            label = { Text("EN") }
+        )
+        FilterChip(
+            selected = !isEnglish,
+            onClick = { if (isEnglish) onToggle() },
+            label = { Text("SR") }
         )
     }
 }

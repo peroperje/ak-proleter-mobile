@@ -83,6 +83,11 @@ dependencies {
     implementation(libs.androidx.security.crypto)
     implementation(libs.material)
 
+    // WorkManager + Hilt-Work (for offline background sync)
+    implementation(libs.androidx.work.runtime)
+    implementation(libs.androidx.hilt.work)
+    ksp(libs.hilt.work.compiler)
+
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
