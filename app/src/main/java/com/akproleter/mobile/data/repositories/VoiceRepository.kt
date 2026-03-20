@@ -52,6 +52,26 @@ class VoiceRepository @Inject constructor(
     }
 
     /**
+     * Gathers context information from the local database to assist the AI backend.
+     */
+    suspend fun getContextHints(): Map<String, Any?> {
+        return try {
+            val athletes = dao.getAthletesOnce().map { it.name }
+            val disciplines = dao.getDisciplinesOnce().map { it.name }
+            val events = dao.getEventsOnce().map { it.title }
+
+            mapOf(
+                "athletes" to athletes,
+                "disciplines" to disciplines,
+                "events" to events
+            )
+        } catch (e: Exception) {
+            Log.w(TAG, "Failed to gather context hints", e)
+            emptyMap()
+        }
+    }
+
+    /**
      * Saves a record that failed to sync to the local Room database.
      * SyncWorker will retry uploading it when connectivity is restored.
      */

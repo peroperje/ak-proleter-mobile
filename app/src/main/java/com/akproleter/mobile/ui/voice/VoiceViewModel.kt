@@ -64,11 +64,12 @@ class VoiceViewModel @Inject constructor(
 
     private fun processVoiceText(text: String) {
         viewModelScope.launch {
+            val hints = voiceRepository.getContextHints()
             val result = voiceRepository.processVoiceCommand(
                 text = text,
                 language = _selectedLanguage.value,
                 role = "ADMIN", // TODO: derive from SessionManager / AuthState
-                contextHints = emptyMap()
+                contextHints = hints
             )
             result.onFailure { e ->
                 Log.w(TAG, "processVoiceCommand failed: ${e.message}")

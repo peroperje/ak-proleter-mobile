@@ -35,6 +35,15 @@ interface AkProleterDao {
 
     @Update
     suspend fun updatePendingResult(result: PendingResultEntity)
+
+    @Query("SELECT * FROM athletes")
+    suspend fun getAthletesOnce(): List<AthleteEntity>
+
+    @Query("SELECT * FROM disciplines")
+    suspend fun getDisciplinesOnce(): List<DisciplineEntity>
+
+    @Query("SELECT * FROM events")
+    suspend fun getEventsOnce(): List<EventEntity>
 }
 
 @Database(
