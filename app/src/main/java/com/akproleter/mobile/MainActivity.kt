@@ -46,7 +46,11 @@ fun AkProleterAppContent() {
         when (state) {
             is AuthState.Authenticated -> {
                 val voiceViewModel: VoiceViewModel = hiltViewModel()
-                VoiceScreen(viewModel = voiceViewModel)
+                VoiceScreen(
+                    viewModel = voiceViewModel,
+                    userName = state.userName,
+                    onLogout = { authViewModel.logout() }
+                )
             }
             else -> {
                 LoginScreen(viewModel = authViewModel)

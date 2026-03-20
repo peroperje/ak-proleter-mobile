@@ -5,6 +5,8 @@ import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,9 +23,12 @@ import com.akproleter.mobile.R
 import com.akproleter.mobile.ui.voice.components.PushToTalkButton
 import com.akproleter.mobile.voice.VoiceState
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun VoiceScreen(
     viewModel: VoiceViewModel,
+    userName: String?,
+    onLogout: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -44,62 +49,89 @@ fun VoiceScreen(
         }
     }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
-    ) {
-        Text(
-            text = "AK PROLETER",
-            style = MaterialTheme.typography.headlineLarge,
-            color = MaterialTheme.colorScheme.primary,
-            fontWeight = FontWeight.Bold,
-            modifier = Modifier.padding(bottom = 8.dp)
-        )
-
-        Text(
-            text = "Voice Assistant",
-            style = MaterialTheme.typography.headlineMedium,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
-
-        // Language toggle chip: EN / SR
-        LanguageToggleChip(
-            selectedLanguage = selectedLanguage,
-            onToggle = { viewModel.toggleLanguage() },
-            modifier = Modifier.padding(bottom = 32.dp)
-        )
-
-        FeedbackDisplay(voiceState)
-
-        Spacer(modifier = Modifier.height(64.dp))
-
-        PushToTalkButton(
-            voiceState = voiceState,
-            onStart = {
-                val permissionCheck = ContextCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.RECORD_AUDIO
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = {
+                    Column {
+                        Text(
+                            text = "AK PROLETER",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                        if (userName != null) {
+                            Text(
+                                text = "Welcome, $userName",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                },
+                actions = {
+                    IconButton(onClick = onLogout) {
+                        Icon(
+                            imageVector = androidx.compose.material.icons.Icons.Default.Logout,
+                            contentDescription = "Logout"
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(3.dp)
                 )
-                if (permissionCheck == PackageManager.PERMISSION_GRANTED) {
-                    viewModel.startListening(context)
-                } else {
-                    permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-                }
-            },
-            onStop = { viewModel.stopListening() }
-        )
+            )
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Text(
+                text = "Voice Assistant",
+                style = MaterialTheme.typography.headlineMedium,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f),
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
 
-        Spacer(modifier = Modifier.height(24.dp))
+            // Language toggle chip: EN / SR
+            LanguageToggleChip(
+                selectedLanguage = selectedLanguage,
+                onToggle = { viewModel.toggleLanguage() },
+                modifier = Modifier.padding(bottom = 32.dp)
+            )
 
-        Text(
-            text = stringResource(id = R.string.voice_hint),
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
-        )
+            FeedbackDisplay(voiceState)
+
+            Spacer(modifier = Modifier.height(64.dp))
+
+            PushToTalkButton(
+                voiceState = voiceState,
+                onStart = {
+                    val permissionCheck = ContextCompat.checkSelfPermission(
+                        context,
+                        Manifest.permission.RECORD_AUDIO
+                    )
+                    if (permissionCheck == PackageManager.PERMISSION_GRANTED) {
+                        viewModel.startListening(context)
+                    } else {
+                        permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                    }
+                },
+                onStop = { viewModel.stopListening() }
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = stringResource(id = R.string.voice_hint),
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.5f)
+            )
+        }
     }
 }
 

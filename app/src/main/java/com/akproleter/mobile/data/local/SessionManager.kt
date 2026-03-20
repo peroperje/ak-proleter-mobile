@@ -31,11 +31,20 @@ class SessionManager @Inject constructor(
         return prefs.getString(KEY_TOKEN, null)
     }
 
+    fun saveName(name: String) {
+        prefs.edit().putString(KEY_NAME, name).apply()
+    }
+
+    fun getName(): String? {
+        return prefs.getString(KEY_NAME, null)
+    }
+
     fun clearSession() {
         prefs.edit().clear().apply()
     }
 
     companion object {
         private const val KEY_TOKEN = "jwt_token"
+        private const val KEY_NAME = "user_name"
     }
 }

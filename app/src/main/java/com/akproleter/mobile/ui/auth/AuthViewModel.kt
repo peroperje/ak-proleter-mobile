@@ -24,22 +24,16 @@ class AuthViewModel @Inject constructor(
         checkSession()
     }
 
-    private fun checkSession() {
-        if (sessionManager.getToken() != null) {
-            _authState.value = AuthState.Authenticated
-        }
-    }
-
     fun login(email: String, pwhash: String) {
         _authState.value = AuthState.Loading
         viewModelScope.launch {
             try {
-                // In a real app, we'd hash the password or use NextAuth's CSRF/Login flow
                 val response = apiService.login(LoginRequest(email, pwhash))
-                if (response.isSuccessful && response.body() != null) {
-                    val loginResponse = response.body()!!
-                    sessionManager.saveToken(loginResponse.token)
-                    _authState.value = AuthState.Authenticated
+                val body = response.body()
+                if (response.isSuccessful && body != null) {
+                    sessionManager.saveToken(body.token)
+                    body.user.name?.let { sessionManager.saveName(it) }
+                    _authState.value = AuthState.Authenticated(body.user.name)
                 } else {
                     _authState.value = AuthState.Error("Invalid credentials")
                 }
@@ -53,12 +47,18 @@ class AuthViewModel @Inject constructor(
         sessionManager.clearSession()
         _authState.value = AuthState.Unauthenticated
     }
+
+    private fun checkSession() {
+        if (sessionManager.getToken() != null) {
+            _authState.value = AuthState.Authenticated(sessionManager.getName())
+        }
+    }
 }
 
 sealed class AuthState {
-    object Idle : AuthState()
-    object Loading : AuthState()
-    object Authenticated : AuthState()
-    object Unauthenticated : AuthState()
+    data object Idle : AuthState()
+    data object Loading : AuthState()
+    data class Authenticated(val userName: String?) : AuthState()
+    data object Unauthenticated : AuthState()
     data class Error(val message: String) : AuthState()
 }
