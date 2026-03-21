@@ -16,6 +16,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+sealed class ProcessState {
+    object Idle : ProcessState()
+    object Processing : ProcessState()
+    data class Success(val message: String) : ProcessState()
+    data class Error(val message: String) : ProcessState()
+}
+
 @HiltViewModel
 class VoiceViewModel @Inject constructor(
     private val voiceManager: VoiceManager,
@@ -25,6 +32,9 @@ class VoiceViewModel @Inject constructor(
 ) : ViewModel() {
 
     val voiceState: StateFlow<VoiceState> = voiceManager.voiceState
+
+    private val _processState = MutableStateFlow<ProcessState>(ProcessState.Idle)
+    val processState: StateFlow<ProcessState> = _processState.asStateFlow()
 
     /** Currently selected recognition & TTS language (BCP-47 tag). */
     private val _selectedLanguage = MutableStateFlow("en-US")
@@ -62,10 +72,16 @@ class VoiceViewModel @Inject constructor(
     /** Reset the UI state back to Idle (e.g., after showing an error). */
     fun reset() {
         voiceManager.resetToIdle()
+        _processState.value = ProcessState.Idle
+    }
+
+    fun clearProcessState() {
+        _processState.value = ProcessState.Idle
     }
 
     private fun processVoiceText(text: String) {
         viewModelScope.launch {
+            _processState.value = ProcessState.Processing
             val locationResult = locationHelper.getCurrentLocation()
 
             val result = voiceRepository.processVoiceCommand(
@@ -76,8 +92,11 @@ class VoiceViewModel @Inject constructor(
                 lon = locationResult?.lon,
                 location = locationResult?.locationText
             )
-            result.onFailure { e ->
+            result.onSuccess { msg ->
+                _processState.value = ProcessState.Success(msg)
+            }.onFailure { e ->
                 Log.w(TAG, "processVoiceCommand failed: ${e.message}")
+                _processState.value = ProcessState.Error(e.message ?: "Unknown error")
             }
         }
     }

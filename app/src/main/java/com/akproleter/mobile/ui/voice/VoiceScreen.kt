@@ -22,6 +22,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.akproleter.mobile.R
 import com.akproleter.mobile.ui.voice.components.PushToTalkButton
 import com.akproleter.mobile.voice.VoiceState
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,7 +34,16 @@ fun VoiceScreen(
 ) {
     val context = LocalContext.current
     val voiceState by viewModel.voiceState.collectAsStateWithLifecycle()
+    val processState by viewModel.processState.collectAsStateWithLifecycle()
     val selectedLanguage by viewModel.selectedLanguage.collectAsStateWithLifecycle()
+
+    LaunchedEffect(processState) {
+        if (processState is ProcessState.Success || processState is ProcessState.Error) {
+            delay(5000)
+            viewModel.clearProcessState()
+            viewModel.reset() // ensure recognized voice text is hidden as well
+        }
+    }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
@@ -105,7 +115,41 @@ fun VoiceScreen(
                 modifier = Modifier.padding(bottom = 32.dp)
             )
 
-            FeedbackDisplay(voiceState)
+            when (val pState = processState) {
+                is ProcessState.Success -> {
+                    Text(
+                        text = pState.message,
+                        color = MaterialTheme.colorScheme.secondary,
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.SemiBold
+                        ),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .heightIn(min = 100.dp)
+                    )
+                }
+                is ProcessState.Error -> {
+                    Text(
+                        text = pState.message,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.SemiBold
+                        ),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .heightIn(min = 100.dp)
+                    )
+                }
+                else -> {
+                    FeedbackDisplay(voiceState)
+                }
+            }
 
             Spacer(modifier = Modifier.height(64.dp))
 
