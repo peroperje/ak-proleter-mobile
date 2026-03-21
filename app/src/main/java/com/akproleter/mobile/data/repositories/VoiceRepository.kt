@@ -20,7 +20,6 @@ class VoiceRepository @Inject constructor(
     suspend fun processVoiceCommand(
         text: String,
         language: String,
-        role: String,
         timestamp: Long,
         lat: Float?,
         lon: Float?,
@@ -28,7 +27,7 @@ class VoiceRepository @Inject constructor(
     ): Result<String> {
         return try {
             val response = apiService.processVoice(
-                VoiceRequest(text, language, role, timestamp, lat, lon, location)
+                VoiceRequest(text, language, timestamp, lat, lon, location)
             )
             if (response.isSuccessful) {
                 val message = response.body()?.message ?: "OK"

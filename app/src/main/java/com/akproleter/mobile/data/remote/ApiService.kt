@@ -27,7 +27,6 @@ interface ApiService {
 data class VoiceRequest(
     val text: String,
     val language: String,
-    val role: String,
     val timestamp: Long,
     val lat: Float?,
     val lon: Float?,

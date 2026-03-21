@@ -71,7 +71,6 @@ class VoiceViewModel @Inject constructor(
             val result = voiceRepository.processVoiceCommand(
                 text = text,
                 language = _selectedLanguage.value,
-                role = "ADMIN", // TODO: derive from SessionManager / AuthState
                 timestamp = System.currentTimeMillis(),
                 lat = locationResult?.lat,
                 lon = locationResult?.lon,
