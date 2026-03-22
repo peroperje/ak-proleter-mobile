@@ -8,6 +8,9 @@ import androidx.work.WorkerParameters
 import com.akproleter.mobile.data.local.AkProleterDao
 import com.akproleter.mobile.data.remote.ApiService
 import com.akproleter.mobile.data.remote.PendingResultRequest
+import com.akproleter.mobile.data.remote.VoiceRequest
+import com.akproleter.mobile.data.local.entities.RecordStatus
+import kotlinx.coroutines.delay
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 
@@ -57,6 +60,56 @@ class SyncWorker @AssistedInject constructor(
             } catch (e: Exception) {
                 Log.e(TAG, "Network error syncing PendingResult id=${entity.localId}: ${e.message}")
                 hasFailure = true
+            }
+        }
+
+        // --- Process VoiceRecordEntity with PENDING status ---
+        val pendingVoiceRecords = dao.getVoiceRecordsByStatus(RecordStatus.PENDING)
+        if (pendingVoiceRecords.isNotEmpty()) {
+            Log.d(TAG, "Found ${pendingVoiceRecords.size} PENDING voice record(s)")
+            for ((index, record) in pendingVoiceRecords.withIndex()) {
+                try {
+                    // Mark PROCESSING
+                    dao.updateVoiceRecord(record.copy(status = RecordStatus.PROCESSING))
+                    
+                    val response = apiService.processVoice(
+                        VoiceRequest(
+                            text = record.voiceInput,
+                            language = "en-US", // Defaulting to en-US for offline saved records 
+                            timestamp = record.createdAt,
+                            lat = null, lon = null, location = null
+                        )
+                    )
+                    
+                    if (response.isSuccessful) {
+                        val responseData = response.body()?.data
+                        val updatedRecord = record.copy(
+                            resultId = responseData?.get("id") as? String,
+                            discipline = responseData?.get("discipline") as? String,
+                            voiceLogId = responseData?.get("voiceLogId") as? String,
+                            score = responseData?.get("score")?.toString(),
+                            formattedScore = responseData?.get("formattedScore") as? String,
+                            status = RecordStatus.SAVED,
+                            updatedAt = System.currentTimeMillis()
+                        )
+                        dao.updateVoiceRecord(updatedRecord)
+                        Log.d(TAG, "Synced VoiceRecord ${record.uuid} successfully")
+                    } else {
+                        Log.w(TAG, "Server rejected VoiceRecord ${record.uuid}. Reverting to PENDING.")
+                        dao.updateVoiceRecord(record.copy(status = RecordStatus.PENDING))
+                        hasFailure = true
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Network error syncing VoiceRecord ${record.uuid}: ${e.message}")
+                    dao.updateVoiceRecord(record.copy(status = RecordStatus.PENDING))
+                    hasFailure = true
+                }
+                
+                // Add 1-min pause if there are more items to process
+                if (index < pendingVoiceRecords.size - 1) {
+                    Log.d(TAG, "Waiting 1 minute before syncing next voice record...")
+                    delay(60_000L)
+                }
             }
         }
 

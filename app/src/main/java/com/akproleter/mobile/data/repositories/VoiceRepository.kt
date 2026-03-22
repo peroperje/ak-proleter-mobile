@@ -5,14 +5,29 @@ import com.akproleter.mobile.data.local.AkProleterDao
 import com.akproleter.mobile.data.local.entities.PendingResultEntity
 import com.akproleter.mobile.data.remote.ApiService
 import com.akproleter.mobile.data.remote.VoiceRequest
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import dagger.hilt.android.qualifiers.ApplicationContext
+import com.akproleter.mobile.data.local.entities.VoiceRecordEntity
+import com.akproleter.mobile.data.local.entities.RecordStatus
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class VoiceRepository @Inject constructor(
     private val apiService: ApiService,
-    private val dao: AkProleterDao
+    private val dao: AkProleterDao,
+    @ApplicationContext private val context: Context
 ) {
+    private fun isOnline(): Boolean {
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = connectivityManager.activeNetwork ?: return false
+        val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+        return capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) || 
+               capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) || 
+               capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
+    }
     /**
      * Sends a voice command to the backend for AI processing.
      * Returns the AI-generated response message on success.
@@ -25,33 +40,51 @@ class VoiceRepository @Inject constructor(
         lon: Float?,
         location: String?
     ): Result<String> {
+        if (!isOnline()) {
+            Log.d(TAG, "Offline mode: Saving transcript as PENDING")
+            val entity = VoiceRecordEntity(
+                voiceInput = text,
+                status = RecordStatus.PENDING
+            )
+            dao.insertVoiceRecord(entity)
+            return Result.success("Saved locally (offline)")
+        }
+
         return try {
             val response = apiService.processVoice(
                 VoiceRequest(text, language, timestamp, lat, lon, location)
             )
             if (response.isSuccessful) {
                 val message = response.body()?.message ?: "OK"
+                val responseData = response.body()?.data
+                
+                // Online Success -> Save to DB as SAVED
+                val entity = VoiceRecordEntity(
+                    resultId = responseData?.get("id") as? String,
+                    discipline = responseData?.get("discipline") as? String,
+                    voiceLogId = responseData?.get("voiceLogId") as? String,
+                    score = responseData?.get("score")?.toString(),
+                    formattedScore = responseData?.get("formattedScore") as? String,
+                    voiceInput = text,
+                    status = RecordStatus.SAVED
+                )
+                dao.insertVoiceRecord(entity)
+                
                 Log.d(TAG, "processVoiceCommand success: $message")
                 Result.success(message)
             } else {
                 val errBody = response.errorBody()?.string()
                 Log.w(TAG, "processVoiceCommand HTTP error: $errBody")
+                // Online Error -> Do NOT save to local DB
                 Result.failure(Exception("Server error: $errBody"))
             }
         } catch (e: Exception) {
-            Log.w(TAG, "processVoiceCommand network failure — saving as PendingResult", e)
-            // Offline-first: persist the utterance locally so SyncWorker can retry later.
-            // The text is stored in 'notes' since we don't yet have structured field parsing here.
-            savePendingResult(
-                athleteId = "",
-                eventId = "",
-                disciplineId = "",
-                score = null,
-                notes = text,
-                lat = lat,
-                lon = lon,
-                location = location
+            Log.w(TAG, "processVoiceCommand network exception — saving as PENDING", e)
+            val entity = VoiceRecordEntity(
+                voiceInput = text,
+                status = RecordStatus.PENDING
             )
+            dao.insertVoiceRecord(entity)
             Result.failure(e)
         }
     }

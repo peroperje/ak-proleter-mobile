@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.*
 import com.akproleter.mobile.workers.SyncWorker
+import com.akproleter.mobile.workers.CleanupWorker
 import dagger.hilt.android.HiltAndroidApp
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -27,6 +28,7 @@ class AkProleterApp : Application(), Configuration.Provider {
     override fun onCreate() {
         super.onCreate()
         scheduleSyncWorker()
+        scheduleCleanupWorker()
     }
 
     private fun scheduleSyncWorker() {
@@ -49,5 +51,20 @@ class AkProleterApp : Application(), Configuration.Provider {
         )
 
         Log.d("AkProleterApp", "SyncWorker scheduled (15-min interval, requires network)")
+    }
+
+    private fun scheduleCleanupWorker() {
+        val cleanupRequest = PeriodicWorkRequestBuilder<CleanupWorker>(
+            repeatInterval = 1,
+            repeatIntervalTimeUnit = TimeUnit.DAYS
+        ).build()
+
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+            CleanupWorker.WORK_NAME,
+            ExistingPeriodicWorkPolicy.KEEP,
+            cleanupRequest
+        )
+
+        Log.d("AkProleterApp", "CleanupWorker scheduled (daily interval)")
     }
 }

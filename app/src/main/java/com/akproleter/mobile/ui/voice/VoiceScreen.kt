@@ -5,8 +5,8 @@ import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -31,6 +31,7 @@ fun VoiceScreen(
     viewModel: VoiceViewModel,
     userName: String?,
     onLogout: () -> Unit,
+    onNavigateToHistory: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val context = LocalContext.current
@@ -91,6 +92,20 @@ fun VoiceScreen(
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surfaceColorAtElevation(3.dp)
                 )
+            )
+        },
+        bottomBar = {
+            BottomAppBar(
+                actions = {
+                    Spacer(Modifier.weight(1f))
+                    IconButton(onClick = onNavigateToHistory) {
+                        Icon(
+                            imageVector = androidx.compose.material.icons.Icons.Default.History,
+                            contentDescription = "Recording History"
+                        )
+                    }
+                    Spacer(Modifier.weight(1f))
+                }
             )
         }
     ) { paddingValues ->

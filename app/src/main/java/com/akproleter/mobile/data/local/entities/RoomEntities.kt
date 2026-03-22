@@ -17,3 +17,22 @@ data class PendingResultEntity(
     val location: String? = null,
     val isSynced: Boolean = false
 )
+
+enum class RecordStatus {
+    SAVED, PENDING, PROCESSING
+}
+
+@Entity(tableName = "voice_records")
+data class VoiceRecordEntity(
+    @PrimaryKey val uuid: String = java.util.UUID.randomUUID().toString(),
+    val createdAt: Long = System.currentTimeMillis(),
+    val updatedAt: Long = System.currentTimeMillis(),
+    val resultId: String? = null,
+    val discipline: String? = null,
+    val voiceLogId: String? = null,
+    val score: String? = null,
+    val formattedScore: String? = null,
+    val voiceInput: String,
+    val status: RecordStatus,
+    val markedIncorrect: Boolean = false
+)

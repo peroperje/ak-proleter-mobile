@@ -22,7 +22,9 @@ object DatabaseModule {
             context,
             AkProleterDatabase::class.java,
             AkProleterDatabase.DATABASE_NAME
-        ).build()
+        )
+        .fallbackToDestructiveMigration()
+        .build()
     }
 
     @Provides

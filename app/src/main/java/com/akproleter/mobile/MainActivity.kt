@@ -18,6 +18,10 @@ import com.akproleter.mobile.ui.auth.LoginScreen
 import com.akproleter.mobile.ui.theme.AKProleterMobileTheme
 import com.akproleter.mobile.ui.voice.VoiceScreen
 import com.akproleter.mobile.ui.voice.VoiceViewModel
+import com.akproleter.mobile.ui.history.HistoryScreen
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -45,12 +49,23 @@ fun AkProleterAppContent() {
     Crossfade(targetState = authState, label = "screenTransition") { state ->
         when (state) {
             is AuthState.Authenticated -> {
-                val voiceViewModel: VoiceViewModel = hiltViewModel()
-                VoiceScreen(
-                    viewModel = voiceViewModel,
-                    userName = state.userName,
-                    onLogout = { authViewModel.logout() }
-                )
+                val navController = rememberNavController()
+                NavHost(navController = navController, startDestination = "voice") {
+                    composable("voice") {
+                        val voiceViewModel: VoiceViewModel = hiltViewModel()
+                        VoiceScreen(
+                            viewModel = voiceViewModel,
+                            userName = state.userName,
+                            onLogout = { authViewModel.logout() },
+                            onNavigateToHistory = { navController.navigate("history") }
+                        )
+                    }
+                    composable("history") {
+                        HistoryScreen(
+                            onBack = { navController.popBackStack() }
+                        )
+                    }
+                }
             }
             else -> {
                 LoginScreen(viewModel = authViewModel)
