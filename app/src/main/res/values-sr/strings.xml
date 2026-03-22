@@ -8,4 +8,6 @@
     <string name="record_result">Snimi rezultat</string>
     <string name="voice_hint">Pritisni i drži da snimiš</string>
     <string name="language_switched">Jezik promenjen na srpski</string>
+    <string name="save">Sačuvaj</string>
+    <string name="cancel">Otkaži</string>
 </resources>

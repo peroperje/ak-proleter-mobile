@@ -5,7 +5,6 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.akproleter.mobile.data.repositories.VoiceRepository
-import com.akproleter.mobile.voice.TextToSpeechManager
 import com.akproleter.mobile.voice.VoiceManager
 import com.akproleter.mobile.voice.VoiceState
 import com.akproleter.mobile.location.AppLocationManager
@@ -27,7 +26,6 @@ sealed class ProcessState {
 class VoiceViewModel @Inject constructor(
     private val voiceManager: VoiceManager,
     private val voiceRepository: VoiceRepository,
-    private val ttsManager: TextToSpeechManager,
     private val locationHelper: AppLocationManager
 ) : ViewModel() {
 
@@ -36,19 +34,20 @@ class VoiceViewModel @Inject constructor(
     private val _processState = MutableStateFlow<ProcessState>(ProcessState.Idle)
     val processState: StateFlow<ProcessState> = _processState.asStateFlow()
 
-    /** Currently selected recognition & TTS language (BCP-47 tag). */
+    /** Currently selected recognition language (BCP-47 tag). */
     private val _selectedLanguage = MutableStateFlow("en-US")
     val selectedLanguage: StateFlow<String> = _selectedLanguage.asStateFlow()
+
+    /** The transcribed text that can be edited by the user before saving. */
+    private val _transcribedText = MutableStateFlow("")
+    val transcribedText: StateFlow<String> = _transcribedText.asStateFlow()
 
     init {
         viewModelScope.launch {
             voiceState.collect { state ->
                 if (state is VoiceState.Success) {
-                    Log.d(TAG, "Voice success: '${state.text}', triggering TTS + processCommand")
-                    // Speak back the recognized text for auditory confirmation (Phase 3)
-                    ttsManager.speak(state.text, _selectedLanguage.value)
-                    // Then process the command against the backend / offline queue
-                    processVoiceText(state.text)
+                    Log.d(TAG, "Voice success: '${state.text}'")
+                    _transcribedText.value = state.text
                 }
             }
         }
@@ -62,17 +61,38 @@ class VoiceViewModel @Inject constructor(
         voiceManager.stopListening()
     }
 
-    /** Toggle the recognition/TTS language between English and Serbian. */
+    fun updateTranscription(text: String) {
+        _transcribedText.value = text
+    }
+
+    fun saveTranscription() {
+        val text = _transcribedText.value
+        if (text.isNotBlank()) {
+            processVoiceText(text)
+            // We keep the transcribed text until processState becomes Success/Error
+            // which is handled in the UI reset logic.
+        }
+    }
+
+    fun cancelTranscription() {
+        _transcribedText.value = ""
+        voiceManager.resetToIdle()
+        _processState.value = ProcessState.Idle
+    }
+
+    /** Toggle the recognition language between English and Serbian. */
     fun toggleLanguage() {
         _selectedLanguage.value = if (_selectedLanguage.value == "en-US") "sr-RS" else "en-US"
         Log.d(TAG, "Language toggled to ${_selectedLanguage.value}")
         voiceManager.resetToIdle()
+        _transcribedText.value = ""
     }
 
     /** Reset the UI state back to Idle (e.g., after showing an error). */
     fun reset() {
         voiceManager.resetToIdle()
         _processState.value = ProcessState.Idle
+        _transcribedText.value = ""
     }
 
     fun clearProcessState() {
@@ -94,6 +114,7 @@ class VoiceViewModel @Inject constructor(
             )
             result.onSuccess { msg ->
                 _processState.value = ProcessState.Success(msg)
+                _transcribedText.value = "" // Clear after success
             }.onFailure { e ->
                 Log.w(TAG, "processVoiceCommand failed: ${e.message}")
                 _processState.value = ProcessState.Error(e.message ?: "Unknown error")

@@ -8,4 +8,6 @@
     <string name="record_result">Record Result</string>
     <string name="voice_hint">Tap and hold to record</string>
     <string name="language_switched">Language changed to English</string>
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
 </resources>
