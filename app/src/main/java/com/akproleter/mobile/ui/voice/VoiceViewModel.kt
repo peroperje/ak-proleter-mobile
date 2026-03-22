@@ -96,6 +96,9 @@ class VoiceViewModel @Inject constructor(
     }
 
     fun clearProcessState() {
+        if (_processState.value is ProcessState.Success) {
+            voiceManager.resetToIdle()
+        }
         _processState.value = ProcessState.Idle
     }
 
