@@ -8,6 +8,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -97,22 +98,43 @@ fun HistoryCard(
                     }
                 }
             } else {
-                Text(text = record.voiceInput, style = MaterialTheme.typography.bodyLarge)
-                Spacer(modifier = Modifier.height(4.dp))
+                Text(text = "Input Text", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                Text(text = record.voiceInput, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
                 
-                Text(text = "Status: ${record.status.name}", style = MaterialTheme.typography.bodyMedium)
+                Spacer(modifier = Modifier.height(12.dp))
                 
                 if (record.discipline != null) {
-                    Text(text = "Discipline: ${record.discipline}", style = MaterialTheme.typography.bodyMedium)
+                    Text(text = "Discipline", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                    Text(text = record.discipline, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                    Spacer(modifier = Modifier.height(12.dp))
                 }
-                if (record.formattedScore != null) {
-                    Text(text = "Score: ${record.formattedScore}", style = MaterialTheme.typography.bodyMedium)
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column {
+                        Text(text = "Status", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                        Text(text = record.status.name, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                    }
+                    
+                    if (record.formattedScore != null) {
+                        Column {
+                            Text(text = "Score", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                            Text(text = record.formattedScore, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold)
+                        }
+                    }
                 }
                 
-                Row(modifier = Modifier.fillMaxWidth().padding(top = 8.dp), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Button(onClick = { isEditing = true }) {
-                        Text("Edit")
+                Row(modifier = Modifier.fillMaxWidth().padding(top = 16.dp), horizontalArrangement = Arrangement.SpaceBetween) {
+                    if (record.status == RecordStatus.PENDING) {
+                        Button(onClick = { isEditing = true }) {
+                            Text("Edit")
+                        }
+                    } else {
+                        Spacer(modifier = Modifier.width(1.dp)) // Maintain alignment if button hidden
                     }
+                    
                     if (record.status == RecordStatus.SAVED) {
                         OutlinedButton(onClick = {
                             onUpdate(record.copy(markedIncorrect = !record.markedIncorrect))
