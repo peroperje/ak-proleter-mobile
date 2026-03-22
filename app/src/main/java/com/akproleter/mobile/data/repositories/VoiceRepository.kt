@@ -20,13 +20,50 @@ class VoiceRepository @Inject constructor(
     private val dao: AkProleterDao,
     @ApplicationContext private val context: Context
 ) {
-    private fun isOnline(): Boolean {
+    fun isOnline(): Boolean {
         val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val network = connectivityManager.activeNetwork ?: return false
         val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
         return capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) || 
                capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) || 
                capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
+    }
+
+    /**
+     * Deletes a voice record.
+     * For PENDING status: Delete locally only.
+     * For SAVED status: Delete via API first (if online), then locally.
+     */
+    suspend fun deleteVoiceRecord(record: VoiceRecordEntity): Result<Unit> {
+        return try {
+            when (record.status) {
+                RecordStatus.PENDING -> {
+                    dao.deleteVoiceRecord(record)
+                    Result.success(Unit)
+                }
+                RecordStatus.SAVED -> {
+                    if (!isOnline()) {
+                        return Result.failure(Exception("Cannot delete saved record while offline"))
+                    }
+                    val resultId = record.resultId ?: return Result.failure(Exception("Missing backend result ID"))
+                    
+                    val response = apiService.deleteResult(resultId)
+                    if (response.isSuccessful) {
+                        dao.deleteVoiceRecord(record)
+                        Result.success(Unit)
+                    } else {
+                        val errMsg = response.errorBody()?.string() ?: "Unknown error"
+                        Result.failure(Exception("Failed to delete from server: $errMsg"))
+                    }
+                }
+                RecordStatus.PROCESSING -> {
+                    Result.failure(Exception("Cannot delete record while it is being processed"))
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error deleting record: ${e.message}", e)
+            Result.failure(e)
+        }
     }
     /**
      * Sends a voice command to the backend for AI processing.

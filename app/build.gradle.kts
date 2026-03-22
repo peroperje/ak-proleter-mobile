@@ -21,6 +21,9 @@ android {
         vectorDrawables {
             useSupportLibrary = true
         }
+        ndk {
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
+        }
     }
 
     buildTypes {
@@ -90,6 +93,9 @@ dependencies {
 
     // Location
     implementation(libs.play.services.location)
+
+    // Whisper on-device STT (offline mode)
+    implementation(libs.onnxruntime.android)
 
 
     testImplementation(libs.junit)

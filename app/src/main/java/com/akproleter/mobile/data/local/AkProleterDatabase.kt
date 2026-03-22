@@ -31,6 +31,9 @@ interface AkProleterDao {
 
     @Query("DELETE FROM voice_records WHERE createdAt < :cutoffTime")
     suspend fun deleteRecordsOlderThan(cutoffTime: Long)
+
+    @Delete
+    suspend fun deleteVoiceRecord(record: VoiceRecordEntity)
 }
 
 @Database(

@@ -22,6 +22,10 @@ interface ApiService {
         @Body result: PendingResultRequest
     ): Response<Unit>
 
+    @retrofit2.http.DELETE("api/results/{id}")
+    suspend fun deleteResult(
+        @retrofit2.http.Path("id") id: String
+    ): Response<Unit>
 }
 
 data class VoiceRequest(

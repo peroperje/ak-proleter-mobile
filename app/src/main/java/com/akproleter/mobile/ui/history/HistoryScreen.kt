@@ -51,7 +51,9 @@ fun HistoryScreen(
             items(records) { record ->
                 HistoryCard(
                     record = record,
-                    onUpdate = { viewModel.updateRecord(it) }
+                    isOnline = viewModel.isOnline(),
+                    onUpdate = { viewModel.updateRecord(it) },
+                    onDelete = { viewModel.deleteRecord(it) }
                 )
             }
         }
@@ -61,7 +63,9 @@ fun HistoryScreen(
 @Composable
 fun HistoryCard(
     record: VoiceRecordEntity,
-    onUpdate: (VoiceRecordEntity) -> Unit
+    isOnline: Boolean,
+    onUpdate: (VoiceRecordEntity) -> Unit,
+    onDelete: (VoiceRecordEntity) -> Unit
 ) {
     var isEditing by remember(record.uuid) { mutableStateOf(false) }
     var editedText by remember(record.uuid) { mutableStateOf(record.voiceInput) }
@@ -135,12 +139,20 @@ fun HistoryCard(
                         Spacer(modifier = Modifier.width(1.dp)) // Maintain alignment if button hidden
                     }
                     
-                    if (record.status == RecordStatus.SAVED) {
-                        OutlinedButton(onClick = {
-                            onUpdate(record.copy(markedIncorrect = !record.markedIncorrect))
-                        }) {
-                            Text(if (record.markedIncorrect) "Marked Incorrect" else "Mark Incorrect")
-                        }
+                    val canDelete = when (record.status) {
+                        RecordStatus.PENDING -> true
+                        RecordStatus.SAVED -> isOnline
+                        RecordStatus.PROCESSING -> false
+                    }
+
+                    OutlinedButton(
+                        onClick = { onDelete(record) },
+                        enabled = canDelete,
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
+                        )
+                    ) {
+                        Text("Delete")
                     }
                 }
             }

@@ -23,6 +23,7 @@ import com.akproleter.mobile.R
 import com.akproleter.mobile.ui.voice.components.PushToTalkButton
 import com.akproleter.mobile.ui.voice.components.TopToast
 import com.akproleter.mobile.voice.VoiceState
+import com.akproleter.mobile.voice.WhisperModelManager
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -39,6 +40,7 @@ fun VoiceScreen(
     val processState by viewModel.processState.collectAsStateWithLifecycle()
     val selectedLanguage by viewModel.selectedLanguage.collectAsStateWithLifecycle()
     val transcription by viewModel.transcribedText.collectAsStateWithLifecycle()
+    val modelState by viewModel.modelDownloadState.collectAsStateWithLifecycle()
 
     LaunchedEffect(processState) {
         if (processState is ProcessState.Success || processState is ProcessState.Error) {
@@ -145,12 +147,8 @@ fun VoiceScreen(
                 )
             } else {
                 when (val pState = processState) {
-                    is ProcessState.Success -> {
-                        // Success handled by TopToast
-                    }
-                    is ProcessState.Error -> {
-                        // Error handled by TopToast
-                    }
+                    is ProcessState.Success -> { /* Handled by TopToast */ }
+                    is ProcessState.Error   -> { /* Handled by TopToast */ }
                     is ProcessState.Processing -> {
                         CircularProgressIndicator()
                         Text(
@@ -159,7 +157,17 @@ fun VoiceScreen(
                         )
                     }
                     else -> {
-                        FeedbackDisplay(voiceState)
+                        // Show Whisper "transcribing" spinner when offline
+                        if (voiceState is VoiceState.Processing) {
+                            CircularProgressIndicator()
+                            Text(
+                                text = "Transcribing...",
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.padding(top = 16.dp)
+                            )
+                        } else {
+                            FeedbackDisplay(voiceState)
+                        }
                     }
                 }
             }
@@ -205,6 +213,55 @@ fun VoiceScreen(
             TopToast(
                 processState = processState
             )
+
+            // Model download banner — shown only during first-time setup
+            if (modelState is WhisperModelManager.DownloadState.Progress) {
+                val progress = modelState as WhisperModelManager.DownloadState.Progress
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .padding(bottom = 80.dp, start = 16.dp, end = 16.dp),
+                    shape = MaterialTheme.shapes.medium,
+                    color = MaterialTheme.colorScheme.secondaryContainer,
+                    tonalElevation = 4.dp
+                ) {
+                    Column(Modifier.padding(12.dp)) {
+                        Text(
+                            text = "Setting up offline voice (one-time setup)...",
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                        Text(
+                            text = "${progress.fileName}: ${progress.percent}%",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
+                        )
+                        LinearProgressIndicator(
+                            progress = { progress.percent / 100f },
+                            modifier = Modifier.fillMaxWidth().padding(top = 6.dp)
+                        )
+                    }
+                }
+            }
+
+            if (modelState is WhisperModelManager.DownloadState.Error) {
+                val err = modelState as WhisperModelManager.DownloadState.Error
+                Surface(
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .fillMaxWidth()
+                        .padding(bottom = 80.dp, start = 16.dp, end = 16.dp),
+                    shape = MaterialTheme.shapes.medium,
+                    color = MaterialTheme.colorScheme.errorContainer,
+                    tonalElevation = 4.dp
+                ) {
+                    Text(
+                        text = "Offline voice setup failed: ${err.message}",
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(12.dp)
+                    )
+                }
+            }
         }
     }
 }
@@ -288,6 +345,7 @@ fun FeedbackDisplay(voiceState: VoiceState) {
     val text = when (voiceState) {
         is VoiceState.Idle -> "Wait for command..."
         is VoiceState.Listening -> "Listening..."
+        is VoiceState.Processing -> ""
         is VoiceState.Partial -> voiceState.text
         is VoiceState.Success -> voiceState.text
         is VoiceState.Error -> "Error: ${voiceState.message}"

@@ -7,11 +7,14 @@ import androidx.lifecycle.viewModelScope
 import com.akproleter.mobile.data.repositories.VoiceRepository
 import com.akproleter.mobile.voice.VoiceManager
 import com.akproleter.mobile.voice.VoiceState
+import com.akproleter.mobile.voice.WhisperModelManager
 import com.akproleter.mobile.location.AppLocationManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -26,10 +29,15 @@ sealed class ProcessState {
 class VoiceViewModel @Inject constructor(
     private val voiceManager: VoiceManager,
     private val voiceRepository: VoiceRepository,
-    private val locationHelper: AppLocationManager
+    private val locationHelper: AppLocationManager,
+    private val whisperModelManager: WhisperModelManager
 ) : ViewModel() {
 
     val voiceState: StateFlow<VoiceState> = voiceManager.voiceState
+
+    /** Whisper model download state — drives the download progress banner in the UI. */
+    val modelDownloadState = whisperModelManager.downloadState
+        .stateIn(viewModelScope, SharingStarted.Eagerly, WhisperModelManager.DownloadState.Idle)
 
     private val _processState = MutableStateFlow<ProcessState>(ProcessState.Idle)
     val processState: StateFlow<ProcessState> = _processState.asStateFlow()
@@ -43,6 +51,9 @@ class VoiceViewModel @Inject constructor(
     val transcribedText: StateFlow<String> = _transcribedText.asStateFlow()
 
     init {
+        // Trigger one-time Whisper model download (no-op if already cached)
+        viewModelScope.launch { whisperModelManager.ensureModels() }
+
         viewModelScope.launch {
             voiceState.collect { state ->
                 if (state is VoiceState.Success) {

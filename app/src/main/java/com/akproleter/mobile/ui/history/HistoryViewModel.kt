@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.akproleter.mobile.data.local.AkProleterDao
 import com.akproleter.mobile.data.local.entities.VoiceRecordEntity
+import com.akproleter.mobile.data.repositories.VoiceRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,7 +14,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class HistoryViewModel @Inject constructor(
-    private val dao: AkProleterDao
+    private val dao: AkProleterDao,
+    private val repository: VoiceRepository
 ) : ViewModel() {
 
     private val _records = MutableStateFlow<List<VoiceRecordEntity>>(emptyList())
@@ -29,10 +31,23 @@ class HistoryViewModel @Inject constructor(
         }
     }
 
+    fun isOnline(): Boolean = repository.isOnline()
+
     fun updateRecord(record: VoiceRecordEntity) {
         viewModelScope.launch {
             dao.updateVoiceRecord(record)
             loadRecords()
+        }
+    }
+
+    fun deleteRecord(record: VoiceRecordEntity) {
+        viewModelScope.launch {
+            val result = repository.deleteVoiceRecord(record)
+            if (result.isSuccess) {
+                loadRecords()
+            } else {
+                // UI will handle disabling or error display if needed
+            }
         }
     }
 }
